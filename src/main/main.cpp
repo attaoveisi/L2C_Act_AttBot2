@@ -1,12 +1,12 @@
 #include <Arduino.h>
 #include <ros.h>
 #include <ros/time.h>
-
+#include <IRremote.h>
 #include <std_msgs/UInt16.h>
 
 //#define not_use_track
 
-ros::NodeHandle  nh;
+ros::NodeHandle nh;
 
 //    The direction of the car's movement
 //  ENA   ENB   IN1   IN2   IN3   IN4   Description  
@@ -21,22 +21,24 @@ ros::NodeHandle  nh;
 
 
 //define L298n module IO Pin
-#define ENA 5
-#define ENB 6
-#define IN1 7
-#define IN2 8
-#define IN3 9
-#define IN4 11
-#define LED 13
+#define ENA 9
+#define ENB 10
+#define IN1 6
+#define IN2 7
+#define IN3 8
+#define IN4 3
+#define ENA_WA 5
+#define IN5 2
+#define IN6 4
 
-#define A8 3
-#define A9 2
-#define A10 0
-#define A11 1
-#define A12 12
-#define A13 13 
+#define A8 0
+#define A9 1
+#define A10 11
+#define A11 12
+#define A12 A2
+#define A13 A0
 
-#include <IRremote.h>
+#define buzzer A1 //buzzer to arduino pin 9
 
 ////////// IR REMOTE CODES //////////
 #define FWD 16736925  // FORWARD
@@ -62,9 +64,11 @@ ros::NodeHandle  nh;
 #define KEY_STAR 16728765
 #define KEY_HASH 16732845
 
-#define RECV_PIN  4
+#define RECV_PIN 13
 
-unsigned char carSpeed = 250;
+int carSpeedfb = 200; // car speed for forward and backward
+int carSpeedlr = 120; // car speed for left and right
+int carWA = 250; // wheel angle 
 bool state = LOW;
 
 long duration;
@@ -78,54 +82,58 @@ unsigned long val;
 unsigned long preMillis;
 
 void forward(){ 
-  digitalWrite(ENA,HIGH); //enable L298n A channel
-  digitalWrite(ENB,HIGH); //enable L298n B channel
+  analogWrite(ENA,carSpeedfb); //enable L298n A channel
+  analogWrite(ENB,carSpeedfb); //enable L298n A channel
   digitalWrite(IN1,HIGH); //set IN1 hight level
   digitalWrite(IN2,LOW);  //set IN2 low level
-  digitalWrite(IN3,LOW);  //set IN3 low level
-  digitalWrite(IN4,HIGH); //set IN4 hight level
+  digitalWrite(IN3,HIGH); //set IN3 hight level
+  digitalWrite(IN4,LOW);  //set IN4 low level
+  digitalWrite(ENA_WA, LOW); 
 }
 
 void back(){
-  digitalWrite(ENA,HIGH);
-  digitalWrite(ENB,HIGH);
-  digitalWrite(IN1,LOW);
-  digitalWrite(IN2,HIGH);
-  digitalWrite(IN3,HIGH);
-  digitalWrite(IN4,LOW);
-}
-
-void left(){
-  digitalWrite(ENA,carSpeed);
-  digitalWrite(ENB,carSpeed);
+  analogWrite(ENA,carSpeedfb);
+  analogWrite(ENB,carSpeedfb);
   digitalWrite(IN1,LOW);
   digitalWrite(IN2,HIGH);
   digitalWrite(IN3,LOW);
-  digitalWrite(IN4,HIGH); 
+  digitalWrite(IN4,HIGH);
+  digitalWrite(ENA_WA, LOW); 
+}
+
+void left(){
+  analogWrite(ENA_WA,carWA); //enable L298n A channel
+  analogWrite(ENA,carSpeedlr); //enable L298n A channel
+  analogWrite(ENB,carSpeedlr); //enable L298n A channel
+  digitalWrite(IN5,HIGH); //set IN3 hight level
+  digitalWrite(IN6,LOW);  //set IN4 low level
+  digitalWrite(IN1,HIGH); //set IN1 hight level
+  digitalWrite(IN2,LOW);  //set IN2 low level
+  digitalWrite(IN3,HIGH); //set IN3 hight level
+  digitalWrite(IN4,LOW);  //set IN4 low level
 }
 
 void right(){
-  digitalWrite(ENA,carSpeed);
-  digitalWrite(ENB,carSpeed);
-  digitalWrite(IN1,HIGH);
-  digitalWrite(IN2,LOW);
-  digitalWrite(IN3,HIGH);
-  digitalWrite(IN4,LOW);
+  // analogWrite(ENA,carSpeedlr); //enable L298n A channel
+  // analogWrite(ENB,carSpeedlr); //enable L298n A channel
+  // digitalWrite(IN1,HIGH); //set IN1 hight level
+  // digitalWrite(IN2,LOW);  //set IN2 low level
+  // digitalWrite(IN3,HIGH); //set IN3 hight level
+  // digitalWrite(IN4,LOW);  //set IN4 low level
+  digitalWrite(ENA_WA,HIGH); //enable L298n A channel
+  digitalWrite(IN5,LOW); //set IN3 hight level
+  digitalWrite(IN6,HIGH);  //set IN4 low level
 }
 
 void stop(){
   digitalWrite(ENA, LOW);
   digitalWrite(ENB, LOW); 
-}
-
-void stateChange(){
-  state = !state;
-  digitalWrite(LED, state);;  
+  digitalWrite(ENA_WA, LOW); 
 }
 
 void track( const std_msgs::UInt16& cmd_msg){
   if(cmd_msg.data == 1){
-     forward();
+    forward();
   }
   else if(cmd_msg.data == 2){
     right();
@@ -164,19 +172,23 @@ ros::Subscriber<std_msgs::UInt16> sub("bangbang", track);
 //before execute loop() function, 
 //setup() function will execute first and only execute once
 void setup() {
-  Serial.begin(9600);//open serial and set the baudrate
+  //Serial.begin(9600);//open serial and set the baudrate
 
-  nh.initNode();
-  nh.subscribe(sub);
+  //nh.initNode();
+  //nh.subscribe(sub);
   
-  pinMode(IN1,OUTPUT);//before useing io pin, pin mode must be set first 
+  pinMode(IN1,OUTPUT); //before using io pin, pin mode must be set first 
   pinMode(IN2,OUTPUT);
   pinMode(IN3,OUTPUT);
   pinMode(IN4,OUTPUT);
   pinMode(ENA,OUTPUT);
   pinMode(ENB,OUTPUT);
-  stop();
-  irrecv.enableIRIn(); 
+  pinMode(ENA_WA,OUTPUT);
+  pinMode(IN5,OUTPUT);
+  pinMode(IN6,OUTPUT);
+  pinMode(buzzer, OUTPUT); // Set buzzer - pin as an output
+  //stop();
+  //irrecv.enableIRIn(); 
 }
 
 //Repeat execution
@@ -185,14 +197,14 @@ void loop() {
   //nh.spinOnce();
   //delay(4);
 
-  ultraSound_center = getDistance(A8,A9,ultraSound_center); // Gets distance from the sensor and this function is repeatedly called while we are at the first example in order to print the lasest results from the distance sensor
-  ultraSound_left = getDistance(A10,A11,ultraSound_left);
-  ultraSound_right = getDistance(A12,A13,ultraSound_right);
+  //ultraSound_center = getDistance(A8,A9,ultraSound_center); // Gets distance from the sensor and this function is repeatedly called while we are at the first example in order to print the lasest results from the distance sensor
+  //ultraSound_left = getDistance(A10,A11,ultraSound_left);
+  //ultraSound_right = getDistance(A12,A13,ultraSound_right);
   // Serial.println(ultraSound_left);
   // Serial.println(ultraSound_center);
   // Serial.println(ultraSound_right);
   //Serial.println("----");
-  minEuclDistCm = minEuclDist(ultraSound_center, ultraSound_left, ultraSound_right);
+  //minEuclDistCm = minEuclDist(ultraSound_center, ultraSound_left, ultraSound_right);
   // Serial.println(minEuclDistCm);
   // Serial.println("----");
   // Serial.println("----");
@@ -236,9 +248,26 @@ void loop() {
       }
     }
   #endif
+
+  // Test feature
   forward();
+  //delay(2000);
+  //left();
+  //delay(2000);
+  //right();
+  //delay(2000);
+  //back();
+  // delay(2000);
+  // stop();
+  // delay(10000000);
+
+
   
 //  if(minEuclDistCm < 10){
-//    stop();
+//   stop();
+//   // tone(buzzer, 1000); // Send 1KHz sound signal...
+//   // delay(1000);        // ...for 1 sec
+//   // noTone(buzzer);     // Stop sound...
+//   // delay(1000);        // ...for 1sec
 //  }
 }
