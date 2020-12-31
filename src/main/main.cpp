@@ -86,28 +86,27 @@ void forward(){
 }
 
 void back(){
-  analogWrite(ENA,carSpeedfb);
+  digitalWrite(ENA,HIGH);
   digitalWrite(IN1,LOW);
   digitalWrite(IN2,HIGH);
   digitalWrite(ENA_WA, LOW); 
 }
 
 void left(){
-  analogWrite(ENA,carSpeedlr); //enable L298n A channel
+  analogWrite(ENA,HIGH); //enable L298n A channel
   digitalWrite(IN1,HIGH); //set IN1 hight level
   digitalWrite(IN2,LOW);  //set IN2 low level
-  analogWrite(ENA_WA,carWA); //enable L298n A channel
+  analogWrite(ENA_WA,HIGH); //enable L298n A channel
   digitalWrite(IN5,LOW); //set IN3 hight level
   digitalWrite(IN6,HIGH);  //set IN4 low level  
 }
 
 void right(){
-  analogWrite(ENA_WA,carWA); //enable L298n A channel
-  analogWrite(ENA,carSpeedlr); //enable L298n A channel
-  digitalWrite(IN5,HIGH); //set IN3 hight level
-  digitalWrite(IN6,LOW);  //set IN4 low level
+  analogWrite(ENA_WA,HIGH); //enable L298n A channel
   digitalWrite(IN1,HIGH); //set IN1 hight level
   digitalWrite(IN2,LOW);  //set IN2 low level
+  digitalWrite(IN5,HIGH); //set IN3 hight level
+  digitalWrite(IN6,LOW);  //set IN4 low level
 }
 
 void stop(){
@@ -219,13 +218,13 @@ void loop() {
       irrecv.resume();
       switch(val){
         case FWD: 
-        case UNKNOWN_F: forward(); break;
+        case UNKNOWN_F: forward(); delay (500); break;
         case BWD: 
-        case UNKNOWN_B: back(); break;
+        case UNKNOWN_B: back(); delay (500); break;
         case LTR: 
-        case UNKNOWN_L: left(); break;
+        case UNKNOWN_L: left(); delay (500); break;
         case RTR: 
-        case UNKNOWN_R: right();break;
+        case UNKNOWN_R: right();delay (500); break;
         case STP: 
         case UNKNOWN_S: stop(); break;
         default: break;
