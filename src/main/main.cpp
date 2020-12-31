@@ -63,8 +63,8 @@ ros::NodeHandle nh;
 
 #define RECV_PIN 11
 
-int carSpeedfb = 250; // car speed for forward and backward
-int carSpeedlr = 250; // car speed for left and right
+int carSpeedfb = 255; // car speed for forward and backward
+int carSpeedlr = 255; // car speed for left and right
 int carWA = 255; // wheel angle 
 bool state = LOW;
 
@@ -79,34 +79,36 @@ unsigned long val;
 unsigned long preMillis;
 
 void forward(){ 
-  digitalWrite(ENA,HIGH); //enable L298n A channel
+  analogWrite(ENA, carSpeedfb); //enable L298n A channel
   digitalWrite(IN1,HIGH); //set IN1 hight level
   digitalWrite(IN2,LOW);  //set IN2 low level
-  digitalWrite(ENA_WA, LOW); 
 }
 
 void back(){
-  digitalWrite(ENA,HIGH);
+  analogWrite(ENA, carSpeedfb);
   digitalWrite(IN1,LOW);
-  digitalWrite(IN2,HIGH);
-  digitalWrite(ENA_WA, LOW); 
+  digitalWrite(IN2,HIGH); 
 }
 
 void left(){
-  analogWrite(ENA,HIGH); //enable L298n A channel
-  digitalWrite(IN1,HIGH); //set IN1 hight level
-  digitalWrite(IN2,LOW);  //set IN2 low level
-  analogWrite(ENA_WA,HIGH); //enable L298n A channel
+  analogWrite(ENA_WA,carWA); //enable L298n A channel
   digitalWrite(IN5,LOW); //set IN3 hight level
   digitalWrite(IN6,HIGH);  //set IN4 low level  
+  delay(100);
+  digitalWrite(ENA,HIGH); //enable L298n A channel
+  digitalWrite(IN1,HIGH); //set IN1 hight level
+  digitalWrite(IN2,LOW);  //set IN2 low level
+  
 }
 
 void right(){
-  analogWrite(ENA_WA,HIGH); //enable L298n A channel
-  digitalWrite(IN1,HIGH); //set IN1 hight level
-  digitalWrite(IN2,LOW);  //set IN2 low level
+  analogWrite(ENA_WA,carWA); //enable L298n A channel
   digitalWrite(IN5,HIGH); //set IN3 hight level
   digitalWrite(IN6,LOW);  //set IN4 low level
+  delay(100);
+  digitalWrite(ENA,HIGH); //enable L298n A channel
+  digitalWrite(IN1,HIGH); //set IN1 hight level
+  digitalWrite(IN2,LOW);  //set IN2 low level
 }
 
 void stop(){
@@ -145,9 +147,21 @@ long getDistance(const int &trigPin,const int &echoPin, long &distanceCm_old) {
   return distanceCm_new;
 }
 
-long minEuclDist(const long &ultraSound_center, const long &ultraSound_left,const long &ultraSound_right){
-  long minEuclDistCm = max(0,min(min(ultraSound_center, ultraSound_left),ultraSound_right));
+long minEuclDist(const long &ultraSound_left,const long &ultraSound_right){
+  long minEuclDistCm = max(0,min(ultraSound_right, ultraSound_left));
   return minEuclDistCm;
+}
+
+void distance(){
+  ultraSound_center = getDistance(A8,A9,ultraSound_center); // Gets distance from the sensor and this function is repeatedly called while we are at the first example in order to print the lasest results from the distance sensor
+  ultraSound_left = getDistance(A10,A11,ultraSound_left);
+  ultraSound_right = getDistance(A12,A13,ultraSound_right);
+
+  minEuclDistCm = minEuclDist(ultraSound_left, ultraSound_right);
+
+  // Serial.println(minEuclDistCm);
+  // Serial.println(ultraSound_center);
+  // Serial.println("---------");
 }
 
 ros::Subscriber<std_msgs::UInt16> sub("bangbang", track);
@@ -186,17 +200,7 @@ void loop() {
   nh.spinOnce();
   delay(4);
 
-  ultraSound_center = getDistance(A8,A9,ultraSound_center); // Gets distance from the sensor and this function is repeatedly called while we are at the first example in order to print the lasest results from the distance sensor
-  ultraSound_left = getDistance(A10,A11,ultraSound_left);
-  ultraSound_right = getDistance(A12,A13,ultraSound_right);
-  // Serial.println(ultraSound_left);
-  // Serial.println(ultraSound_center);
-  // Serial.println(ultraSound_right);
-  // Serial.println("----");
-  minEuclDistCm = minEuclDist(ultraSound_center, ultraSound_left, ultraSound_right);
-  //Serial.println(minEuclDistCm);
-  // Serial.println("----");
-  // Serial.println("----");
+  distance();
 
   #ifdef not_use_track
     if(Serial.available())
@@ -218,13 +222,13 @@ void loop() {
       irrecv.resume();
       switch(val){
         case FWD: 
-        case UNKNOWN_F: forward(); delay (500); break;
+        case UNKNOWN_F: forward(); break;
         case BWD: 
-        case UNKNOWN_B: back(); delay (500); break;
+        case UNKNOWN_B: back(); break;
         case LTR: 
-        case UNKNOWN_L: left(); delay (500); break;
+        case UNKNOWN_L: left(); break;
         case RTR: 
-        case UNKNOWN_R: right();delay (500); break;
+        case UNKNOWN_R: right();break;
         case STP: 
         case UNKNOWN_S: stop(); break;
         default: break;
@@ -237,26 +241,37 @@ void loop() {
       }
     }
   #endif
-
-  // Test feature
-  //forward();
-  //delay(2000);
-  //right();
-  //delay(2000);
-  //right();
-  //delay(2000);
-  //back();
-  // delay(2000);
-  // stop();
-  // delay(10000000);
-
-
   
- if(minEuclDistCm < 30 && minEuclDistCm > 2){
+ while (minEuclDistCm < 30 && minEuclDistCm > 5){
   stop();
-  tone(buzzer, 500); // Send 1KHz sound signal...
-  delay(1000);        // ...for 1 sec
-  noTone(buzzer);     // Stop sound...
-  delay(3000);        // ...for 1sec
+  while (minEuclDistCm < 30 && minEuclDistCm > 5){
+    tone(buzzer, 1000); // Send 300 Hz sound signal...
+    delay(1000);        // ...for 1 sec
+    noTone(buzzer);     // Stop sound...
+    back();
+    delay(250);        // ...for .25 sec
+    distance();
+    if (minEuclDistCm > 35){
+      break;
+    }
+    delay(2500);        // ...for 2.5 sec
+  }
  }
+
+ while (ultraSound_center < 30 && ultraSound_center > 5){
+  stop();
+  while (ultraSound_center < 30 && ultraSound_center > 5){
+    tone(buzzer, 300); // Send 500 Hz sound signal...
+    delay(1000);        // ...for 1 sec
+    noTone(buzzer);     // Stop sound...
+    forward();
+    delay(250);        // ...for .25 sec
+    distance();
+    if (ultraSound_center > 35){
+      break;
+    }
+    delay(2500);        // ...for 2.5 sec
+  }
+ }
+
 }
