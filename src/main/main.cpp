@@ -68,10 +68,10 @@ int carSpeedlr = 255; // car speed for left and right
 int carWA = 255; // wheel angle 
 bool state = LOW;
 
-long duration;
-long distanceCm_new = 0, distanceCm_old = 0;
-long ultraSound_center = 0, ultraSound_left = 0, ultraSound_right = 0;
-long minEuclDistCm = 0;
+float duration;
+float distanceCm_new = 0.0, distanceCm_old = 0.0;
+float ultraSound_center = 0.0, ultraSound_left = 0.0, ultraSound_right = 0.0;
+float minEuclDistCm = 0.0;
 
 IRrecv irrecv(RECV_PIN);
 decode_results results;
@@ -131,7 +131,7 @@ void track( const std_msgs::UInt16& cmd_msg){
   } 
 }
 
-long getDistance(const int &trigPin,const int &echoPin, long &distanceCm_old) {
+float getDistance(const int &trigPin,const int &echoPin, float &distanceCm_old) {
   digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
   digitalWrite(trigPin, HIGH);
@@ -139,16 +139,16 @@ long getDistance(const int &trigPin,const int &echoPin, long &distanceCm_old) {
   digitalWrite(trigPin, LOW);
   duration = pulseIn(echoPin, HIGH);
   distanceCm_old = distanceCm_new;
-  distanceCm_new = duration*0.034/2.0f;
-  if (abs((distanceCm_new-distanceCm_old) >= 100) || (distanceCm_new >= 600))
+  distanceCm_new = duration*0.034/2.0;
+  if (abs((distanceCm_new-distanceCm_old) >= 100.0) || (distanceCm_new >= 600.0))
   {
     distanceCm_new = distanceCm_old;
   }
   return distanceCm_new;
 }
 
-long minEuclDist(const long &ultraSound_left,const long &ultraSound_right){
-  long minEuclDistCm = max(0,min(ultraSound_right, ultraSound_left));
+float minEuclDist(const long &ultraSound_left,const long &ultraSound_right){
+  float minEuclDistCm = max(0,min(ultraSound_right, ultraSound_left));
   return minEuclDistCm;
 }
 
@@ -169,7 +169,7 @@ ros::Subscriber<std_msgs::UInt16> sub("bangbang", track);
 //before execute loop() function, 
 //setup() function will execute first and only execute once
 void setup() {
-  //Serial.begin(9600);//open serial and set the baudrate
+  // Serial.begin(9600);//open serial and set the baudrate
 
   nh.initNode();
   nh.subscribe(sub);
@@ -242,35 +242,35 @@ void loop() {
     }
   #endif
   
- while (minEuclDistCm < 30 && minEuclDistCm > 5){
+ if ((ultraSound_left < 30.0 && ultraSound_left > 5.0) || (ultraSound_right < 30.0 && ultraSound_right > 5.0)){
   stop();
-  while (minEuclDistCm < 30 && minEuclDistCm > 5){
+  while ((ultraSound_left < 30.0 && ultraSound_left > 5.0) || (ultraSound_right < 30.0 && ultraSound_right > 5.0)){
     tone(buzzer, 1000); // Send 300 Hz sound signal...
     delay(1000);        // ...for 1 sec
     noTone(buzzer);     // Stop sound...
     back();
     delay(250);        // ...for .25 sec
     distance();
-    if (minEuclDistCm > 35){
+    if ((ultraSound_left >= 30.0) || (ultraSound_right >= 30.0)){
       break;
     }
-    delay(2500);        // ...for 2.5 sec
+    stop();
+    delay(500);        // ...for 0.5 sec
   }
- }
-
- while (ultraSound_center < 30 && ultraSound_center > 5){
+ }else if(ultraSound_center < 30.0 && ultraSound_center > 5.0){
   stop();
-  while (ultraSound_center < 30 && ultraSound_center > 5){
+  while (ultraSound_center < 30.0 && ultraSound_center > 5.0){
     tone(buzzer, 300); // Send 500 Hz sound signal...
     delay(1000);        // ...for 1 sec
     noTone(buzzer);     // Stop sound...
     forward();
     delay(250);        // ...for .25 sec
     distance();
-    if (ultraSound_center > 35){
+    if (ultraSound_center >= 30.0){
       break;
     }
-    delay(2500);        // ...for 2.5 sec
+    stop();
+    delay(500);        // ...for 0.5 sec
   }
  }
 
