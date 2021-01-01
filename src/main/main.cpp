@@ -4,7 +4,7 @@
 #include <IRremote.h>
 #include <std_msgs/UInt16.h>
 
-#define not_use_track
+//#define not_use_track
 
 ros::NodeHandle nh;
 
@@ -66,7 +66,6 @@ ros::NodeHandle nh;
 int carSpeedfb = 255; // car speed for forward and backward
 int carSpeedlr = 255; // car speed for left and right
 int carWA = 255; // wheel angle 
-bool state = LOW;
 
 float duration;
 float distanceCm_new = 0.0, distanceCm_old = 0.0;
@@ -77,6 +76,9 @@ IRrecv irrecv(RECV_PIN);
 decode_results results;
 unsigned long val;
 unsigned long preMillis;
+
+bool state = LOW;
+#define LED A3
 
 void forward(){ 
   analogWrite(ENA, carSpeedfb); //enable L298n A channel
@@ -164,6 +166,11 @@ void distance(){
   // Serial.println("---------");
 }
 
+void stateChange(){
+  state = !state;
+  digitalWrite(LED, state);;  
+}
+
 ros::Subscriber<std_msgs::UInt16> sub("bangbang", track);
 
 //before execute loop() function, 
@@ -191,7 +198,7 @@ void setup() {
   noTone(buzzer);     // Stop sound...
   stop();
   
-  irrecv.enableIRIn(); 
+  //irrecv.enableIRIn(); 
 }
 
 //Repeat execution
@@ -212,7 +219,7 @@ void loop() {
         case 'l': left();   break;
         case 'r': right();  break;
         case 's': stop();   break;
-        //case 'a': stateChange(); break;
+        case 'a': stateChange(); break;
         default:  break;
       }
     }
