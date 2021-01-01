@@ -21,5 +21,6 @@ It consists of:
   
   - two IMUs for observing (estimating) the front wheel angle 
   
+  ![image](https://user-images.githubusercontent.com/17289954/103441925-ca98b700-4c51-11eb-9cae-ae7c9133cd23.png)
   
-  - three ultrasound sensors for colllision avoidance (and a buzzer to let me know if a collision may happen)
+  - three ultrasound sensors for colllision avoidance (and a buzzer to let me know if a collision may happen), two in front and one in back
