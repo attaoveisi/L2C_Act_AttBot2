@@ -194,7 +194,7 @@ void setup() {
   pinMode(A9, INPUT);
   pinMode(A11, INPUT);
   pinMode(A13, INPUT);
-  pinMode(LED, OUTPUT) // Declare the LED as an output
+  pinMode(LED, OUTPUT); // Declare the LED as an output
 
   noTone(buzzer);     // Stop sound...
   stop();
