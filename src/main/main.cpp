@@ -4,7 +4,7 @@
 #include <IRremote.h>
 #include <std_msgs/UInt16.h>
 
-//#define not_use_track
+// #define not_use_track
 
 ros::NodeHandle nh;
 
@@ -135,14 +135,14 @@ void track( const std_msgs::UInt16& cmd_msg){
 
 float getDistance(const int &trigPin,const int &echoPin, float &distanceCm_old) {
   digitalWrite(trigPin, LOW);
-  delayMicroseconds(2);
+  delayMicroseconds(5);
   digitalWrite(trigPin, HIGH);
-  delayMicroseconds(10);
+  delayMicroseconds(20);
   digitalWrite(trigPin, LOW);
   duration = pulseIn(echoPin, HIGH);
   distanceCm_old = distanceCm_new;
   distanceCm_new = duration*0.034/2.0;
-  if (abs((distanceCm_new-distanceCm_old) >= 100.0) || (distanceCm_new >= 600.0))
+  if (abs((distanceCm_new-distanceCm_old) >= 200.0) || (distanceCm_new >= 600.0))
   {
     distanceCm_new = distanceCm_old;
   }
@@ -161,7 +161,8 @@ void distance(){
 
   minEuclDistCm = minEuclDist(ultraSound_left, ultraSound_right);
 
-  // Serial.println(minEuclDistCm);
+  // Serial.println(ultraSound_left);
+  // Serial.println(ultraSound_right);
   // Serial.println(ultraSound_center);
   // Serial.println("---------");
 }
@@ -176,7 +177,7 @@ ros::Subscriber<std_msgs::UInt16> sub("bangbang", track);
 //before execute loop() function, 
 //setup() function will execute first and only execute once
 void setup() {
-  // Serial.begin(9600);//open serial and set the baudrate
+  //Serial.begin(9600);//open serial and set the baudrate
 
   nh.initNode();
   nh.subscribe(sub);
