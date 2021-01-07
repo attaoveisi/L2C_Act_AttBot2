@@ -4,7 +4,7 @@
 #include <IRremote.h>
 #include <std_msgs/UInt16.h>
 
-// #define not_use_track
+#define not_use_track
 
 ros::NodeHandle nh;
 
@@ -200,7 +200,7 @@ void setup() {
   noTone(buzzer);     // Stop sound...
   stop();
   
-  //irrecv.enableIRIn(); 
+  irrecv.enableIRIn(); 
 }
 
 //Repeat execution
